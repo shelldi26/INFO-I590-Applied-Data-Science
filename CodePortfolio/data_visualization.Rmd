@@ -1,0 +1,103 @@
+---
+title: "Data_Visualization"
+author: "Michelle Howe"
+date: "April 12, 2019"
+output: html_document
+---
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# GGPLOT
+From https://r4ds.had.co.nz/data-visualisation.html
+ 
+## Libraries Needed
+```{r}
+library(tidyverse)
+mtcars
+```
+## Scatterplot
+```{r}
+ggplot(data = mtcars) + #This line just says what data to use
+  geom_point(mapping = aes(x = wt, y = mpg)) #This line says add points (for scatterplot)
+#and specifies the x and y arguments. You always need the mapping = aes() portion.
+```
+## Add a third variable to Scatterplot
+### Utilizing Color
+```{r}
+ggplot(data = mtcars) +
+  geom_point(mapping = aes(x = wt, y = mpg, color = cyl))
+``` 
+
+### Utilizing size
+```{r}
+ggplot(data = mtcars) +
+  geom_point(mapping = aes(x = wt, y = mpg, size = hp))
+``` 
+
+### Utilizing transparency
+```{r}
+ggplot(data = mtcars) +
+  geom_point(mapping = aes(x = wt, y = mpg, alpha = hp))
+``` 
+
+### Utilizing shape
+```{r}
+ggplot(data = iris) +
+  geom_point(mapping = aes(x = Sepal.Length, y = Petal.Length, shape = Species))
+```
+Shape cannot be applied to a continuous variable
+
+## Facets
+```{r}
+ggplot(data = iris) +
+  geom_point(mapping = aes(x = Sepal.Length, y = Petal.Length)) +
+  facet_wrap(~ Species, nrow = 2) #variable used here must be discrete
+```
+
+## Smooth Geom
+```{r}
+ggplot(data = mtcars) +
+  geom_smooth(mapping = aes(x = wt, y = mpg))
+```
+
+## Overlapping
+add multiple geom functions
+```{r}
+ggplot(data = mtcars) +
+  geom_point(mapping = aes(x = wt, y = mpg)) +
+  geom_smooth(mapping = aes(x = wt, y = mpg))
+```
+
+## Bar plot
+```{r}
+ggplot(data = mtcars) +
+  geom_bar(mapping = aes(x = cyl))
+```
+
+## Boxplots
+```{r}
+ggplot(data = iris, mapping = aes(x = Species, y = Petal.Length))+
+  geom_boxplot()
+```
+
+Note that the mapping and aes arguments can go up in the first sentence to apply them to everything below. 
+In order to flip the coordinates do the following:
+```{r}
+ggplot(data = iris, mapping = aes(x = Species, y = Petal.Length))+
+  geom_boxplot() +
+  coord_flip()
+```
+
+## Histogram
+From DataCamp Introduction to the Tidyverse course
+```{r}
+ggplot(data = mtcars, mapping = aes(x = mpg)) +
+  geom_histogram()
+```
+
+To adjust bin width, add in a binwidth argument:
+```{r}
+ggplot(data = mtcars, mapping = aes(x = mpg)) +
+  geom_histogram(binwidth = 5)
+```

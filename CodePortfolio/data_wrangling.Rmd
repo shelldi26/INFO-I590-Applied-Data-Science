@@ -1,0 +1,152 @@
+---
+title: "Data_Wrangling"
+author: "Michelle Howe"
+date: "April 12, 2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Examine structure of data
+From https://www.datacamp.com/community/tutorials/intro-data-frame-r
+```{r mtcars}
+str(mtcars)
+```
+## Creating a data frame
+From https://www.datacamp.com/community/tutorials/intro-data-frame-r
+```{r}
+#Define vectors
+drug <- c("enalapril", "lisinopril", "losartan", "enalapril", "lisinopril", "losartan")
+cost <- c(0.82, 0.43, 1.21, 0.98, 0.41, 1.10)
+drugclass <- c("ACEI", "ACEI", "ARB", "ACEI", "ACEI", "ARB")
+year <- c(2007, 2007, 2007, 2008, 2008, 2008)
+#combine vectors into data frame using data.frame() function
+HTNdrug_df <- data.frame(drug, cost, drugclass, year)
+str(HTNdrug_df)
+```
+## Regex
+From week 4 lectures and practice
+
+### Libraries needed
+From Week 4 lectures and practice
+```{r}
+library(stringr)
+```
+
+### Creating a regular expression pattern in R
+```{r}
+ #pattern <- regex("desired regex pattern" comments = TRUE)
+```
+### Regex Methods that can be Used (from stringr library)
+```{r}
+str_detect 
+str_extract 
+str_extract_all
+str_replace
+str_replace_all
+str_split
+```
+
+## TIDYVERSE FUNCTIONS
+From Week 5 lectures/Datacamp Introduction to Tidyverse course 
+
+### Libraries Needed
+```{r}
+library(dplyr)
+```
+### Select
+Select certain columns to look at
+```{r}
+HTNdrug_df %>%
+  select(drug, drugclass)
+HTNdrug_df %>%
+  select(-drugclass)
+```
+Can also use ends_with and starts_with in select function
+
+### Rename
+Rename a column
+This function from https://bookdown.org/rdpeng/exdata/managing-data-frames-with-the-dplyr-package.html
+```{r}
+HTNdrug_df %>%
+  rename(therapy = drug)
+```
+
+### Filter
+Look at only certain values for one or more columns
+```{r}
+HTNdrug_df %>%
+  filter(drugclass == "ACEI")
+HTNdrug_df %>%
+  filter(drugclass == "ACEI", cost < 0.5)
+```
+
+### Arrange
+Arrange by values in a certain column, ascending or descending values
+```{r}
+HTNdrug_df %>%
+  arrange(cost)
+HTNdrug_df %>%
+  arrange(desc(cost)) #descending order
+```
+
+### Mutate
+Change values in a column
+```{r}
+HTNdrug_df %>%
+  mutate(cost = cost * 30) #change to cost per bottle of 30 tablets
+HTNdrug_df %>%
+  mutate(bottlecost = cost * 30) #adding column insteading changing
+```
+## Further TIDYVERSE FUNCTIONS
+From https://r4ds.had.co.nz/tidy-data.html
+ 
+### Libraries Needed
+```{r}
+library(tidyverse)
+```
+### Spread
+Making the table wider
+```{r}
+newHTNdrug <- HTNdrug_df %>%
+  spread(key = year, value = cost)
+newHTNdrug
+```
+
+### Gather 
+making table longer
+```{r}
+newHTNdrug %>%
+  gather('2007','2008', key = "year", value = "cost")
+```
+
+### Separate
+Separate a column into more than one column
+```{r}
+sepHTNdrug <- HTNdrug_df %>%
+  separate(cost, into = c("dollars", "cents"))
+sepHTNdrug
+```
+Separates at non-alphanumeric character by default. can add "sep =" argument  if needed
+
+### Unite
+combine columns together
+```{r}
+sepHTNdrug %>%
+  unite(cost, dollars, cents, sep = ".")
+```
+
+### Missing Values
+```{r}
+HTNdrug_df %>%
+  spread(key = drugclass, value = cost) %>%
+  gather("ACEI", "ARB", key = "drugclass", value = "cost")
+```
+This left us with a mess, lets fix it
+```{r}
+HTNdrug_df %>%
+  spread(key = drugclass, value = cost) %>%
+  gather("ACEI", "ARB", key = "drugclass", value = "cost", na.rm = TRUE)
+```

@@ -1,0 +1,228 @@
+---
+title: "Data_Analysis"
+author: "Michelle Howe"
+date: "April 12, 2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## TIDYVERSE FUNCTIONS
+From Datacamp Introduction to Tidyverse course
+
+### Libraries Needed
+```{r}
+library(dplyr)
+library(gapminder)
+library(tidyverse)
+```
+
+### Summarize
+Functions to use here: mean, sum, median, min, max
+Summarize by a value of a certain column
+```{r}
+gapminder %>%
+  summarize(maxLifeExp = max(lifeExp))
+```
+utilize na.rm = TRUE if there are null values
+
+### Group_by
+Have your results grouped (i.e. instead of max life expectancy of entire sample, get the max life expectancy by year)
+```{r}
+gapminder %>%
+  group_by(year) %>%
+  summarize(maxLifeExp = max(lifeExp))
+```
+
+## Exploratory Data Analysis
+From https://bookdown.org/rdpeng/exdata/exploratory-data-analysis-checklist.html 
+
+### Look at head or tail of data
+```{r}
+head(mtcars)
+tail(mtcars)
+```
+### Look at data in a table for counts
+```{r}
+table(mtcars$cyl)
+```
+### Look at unique elements
+```{r}
+unique(mtcars$mpg)
+```
+### Summary statistics
+```{r}
+summary(mtcars$mpg)
+```
+### Quantiles
+```{r}
+quantile(mtcars$mpg, seq(0, 1, 0.1))
+```
+### Mean
+```{r}
+mean(mtcars$mpg, na.rm = TRUE)
+```
+
+### Trimmed Mean
+```{r}
+mean(mtcars$mpg, trim = 0.1, na.rm = TRUE)
+```
+
+### Median
+```{r}
+median(mtcars$mpg, na.rm = TRUE)
+```
+
+### Standard Deviation
+```{r}
+sd(mtcars$mpg, na.rm = TRUE)
+```
+
+### Interquartile Range
+```{r}
+IQR(mtcars$mpg, na.rm = TRUE)
+```
+
+### Median Absolute Standard Deviation (MAD)
+```{r}
+mad(mtcars$mpg, na.rm = TRUE)
+```
+
+# Modeling
+
+## Linear Models in R
+From http://daviddalpiaz.github.io/appliedstats/simple-linear-regression.html#the-lm-function
+```{r}
+linear_model <- lm(mpg ~ wt, data = mtcars)
+#And now plotting it with a fitted line
+plot(mpg ~ wt, data = mtcars)
+abline(linear_model, lwd = 3, col = "darkorange")
+```
+
+## Generalized Linear Model
+From Regression Modeling in R: Case Studies DataCamp slides
+Generalized Linear Models allow the error distribution to follow a non-normal distribution
+```{r}
+#Gaussian GLM
+gaussian_glm <- glm(mpg ~ wt, data = mtcars, family = "gaussian") 
+```
+
+Generate predicted values and look at residuals:
+```{r}
+pred_df <- data.frame(wt = seq(from = 1, to = 4, length = 10)) #create fake predictors
+pred_df$predicted <- predict(gaussian_glm, pred_df) #predict the values now
+diag <- data.frame(residuals = resid(gaussian_glm), fitted = fitted(gaussian_glm)) #Find residuals
+ggplot(diag) +
+  geom_point(aes(x = fitted, y = residuals)) #plotted residuals
+``` 
+
+### Model Diagnostics
+From http://daviddalpiaz.github.io/appliedstats/model-diagnostics.html#data-analysis-examples
+```{r}
+#returning to the plain linear model we looked at earlier, plt fitted vs residuals
+plot(fitted(linear_model), resid(linear_model), col = "grey", pch = 20,
+     xlab = "Fitted", ylab = "residuals")
+abline(h = 0, col = "darkorange", lwd = 2)
+
+#Breusch-Pagan Test - looking for homoscedasticity (or constant variance).
+#We do need another library for this
+library(lmtest)
+bptest(linear_model)
+#Here we see the p-value is large, so we do not reject the null, therefore we 
+#accept the constant variance assumption
+
+#Now let's look at Histograms of residuals to assess for normality
+hist(resid(linear_model))
+
+#Now let's look at the Q-Q plots to get a better idea of normality
+qqnorm(resid(linear_model), col = "darkgrey")
+qqline(resid(linear_model), col = "dodgerblue", lwd = 2)
+
+#This isn't looking super great, let's look at the Shapiro-Wilk test 
+shapiro.test(resid(linear_model))
+#While the p value isn't large, it's not small enough to reject it so we will assume normality
+
+#Now let's look for data points with high leverage, which could have a large influence on the model
+hatvalues(linear_model)
+hatvalues(linear_model) > 2 * mean(hatvalues(linear_model))
+#There are 4 high leverage points identified
+
+#Next let's move onto outliers to see if any might have a large effect on the model
+rstandard(linear_model)
+rstandard(linear_model)[abs(rstandard(linear_model)) > 2]
+
+#We see that 3 points are outliers
+#Finally we are looking at influence, some outliers could change regression a lot 
+#This will happen if they are high leverage and large residual. They are considered influential
+#Cook's Distance is the formula o consider here for influence.  Here is an example of running one 
+#through to see if it is considered influential
+cooks.distance(linear_model)["Fiat 128"] > 4 / length(cooks.distance(linear_model))
+```
+
+
+## K means Clustering
+From https://bookdown.org/rdpeng/exdata/k-means-clustering.html
+```{r}
+kmeansObj <- kmeans(mtcars, centers = 3) # use this if you want to specify the number of clusters
+kmeansObj$cluster #see how each data point was classified using the algorithm
+```
+
+## Elbow Method of K means Clustering
+To find best number of clusters. From Practice session during week 11
+```{r}
+ # compute total within-cluster sum of squares
+wss <- function(k) {
+  kmeans(mtcars, k, nstart = 10)$tot.withinss
+}
+# decide how many k values you want to look at
+k.values <- 1:10
+
+#compute wss for those clusters you decided on
+wss_values <- map_dbl(k.values, wss)
+
+plot(k.values, wss_values,
+     type="b", pch = 19, frame = FALSE,
+     xlab="Number of clusters K",
+     ylab="Total within-clusters sum of squares")
+#There is pretty clearly an elbow at 2, so we will use that.
+
+#And now you can look at the clusters. First you need this factoextra library
+library(factoextra) 
+final <- kmeans(mtcars, 2, nstart = 25)
+fviz_cluster(final, data = mtcars)
+``` 
+
+## Decision Trees
+From Video Lecture, Predicting with Trees by Jeff Leek
+```{r}
+library(tree)
+tooth_tree <- tree(supp ~ len + dose, data = ToothGrowth)
+summary(tooth_tree)
+plot(tooth_tree)
+text(tooth_tree)
+#Now we can look at the partitions
+plot(ToothGrowth$len,ToothGrowth$dose,pch=19, col = as.numeric(ToothGrowth$supp))
+partition.tree(tooth_tree,label="supp", add = TRUE)
+#This was clearly a terrible example but I was trying to work with internal datasets that 
+#hadn't already been used in lecture.  Anyway this is how to run the code...
+
+#Now using rpart, requires a new library.  This is from the Week 12 practice
+library(rpart)
+#Classification tree 
+ctree <- rpart(supp ~ len + dose, data = ToothGrowth, method = 'class')
+summary(ctree)
+plot(ctree)
+text(ctree)
+#Regression Tree 
+rtree <- rpart(supp ~ len + dose, data = ToothGrowth, method = 'anova')
+summary(rtree)
+plot(rtree)
+text(rtree)
+#According to https://www.datacamp.com/community/tutorials/decision-trees-R
+# A classification tree is used to predict a qualitative response, and a 
+# Regression tree predicts a quantitative response
+```
+
+

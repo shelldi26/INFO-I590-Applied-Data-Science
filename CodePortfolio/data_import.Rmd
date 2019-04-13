@@ -1,0 +1,50 @@
+---
+title: "Data_Import"
+author: "Michelle Howe"
+date: "April 12, 2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+## Libraries needed
+From Week 4 lectures and practice
+```{r}
+library(readr)
+```
+## Read Lines from a .txt file
+```{r}
+#text <- read_lines('examplefile.txt') from readr library
+```
+## Read RDS file
+From Week 5 Practice
+```{r}
+readRDS
+```
+## Read CSV file
+From https://bookdown.org/rdpeng/exdata/exploratory-data-analysis-checklist.html
+```{r}
+#myfile <- read_csv('examplefile.csv') from readr library
+```
+Can add in 'col_typpes =' to tell R what class each column is (c for character, n for numeric, i for integer)
+for example 'col_types = "ccccinnccccccn"'
+
+## Read a .data file
+From Week 12 Tutorial
+```{r}
+#mydata <- read.table("nameoffile.data", col.names = c("example", "example2", "example3""))
+#This will give the data file column names
+``` 
+
+## Read a data frame from the web
+From http://daviddalpiaz.github.io/appliedstats/categorical-predictors-and-interactions.html
+```{r}
+#mydata = read.table("http://examplewebsiteblahblah.data", 
+  #quote = "\"",
+  #comment.char = "",
+  #stringsAsFactors = FALSE)
+
+#Then you can give dataframe headers:
+#colnames(mydata) = c("example1","example2","example3")
+```
