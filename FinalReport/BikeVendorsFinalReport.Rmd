@@ -1,0 +1,304 @@
+---
+title: "Bike Vendors Final Report"
+author: "Michelle Howe"
+date: "April 27, 2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Exploratory Analysis of Bike Vendors Dataset
+
+## Questions to Answer
+1. What types of bikes are purchased most frequently?
+2. What types of bikes are purchased least frequently?
+3. Can vendors be separated into smaller groups to provide more targeted advertising?
+4. Are there any bikes that do not follow anticipated sales based on others in their category (e.g. any outliers)?
+
+## Data Import and Description
+```{r include=FALSE}
+library(readr)
+library(dplyr)
+bikes <- read_csv('bikeVendors.csv')
+```
+
+```{r include = FALSE}
+str(bikes)
+unique(bikes$category1)
+unique(bikes$category2)
+unique(bikes$frame)
+summary(bikes$price)
+unique(unlist(lapply(bikes, function(x) which (is.na(x))))) #Looking for na values
+lapply(bikes, function(x){length(which(x == 0))}) #How many 0's in each column
+colSums(Filter(is.numeric, bikes)) #See what table values appear to mean - does each column sum?
+rowSums(bikes[6:35]) #Does each row sum?
+```
+### Narrative Summary
+1. The bikeVendors dataset contains 97 total observations and 35 Variables.  
+The variables consist of the following (variable types in parenthesis):
+-  1 model variable (character)
+-  2 Category variables (character): 
+   - category1: 2 unique values ("Mountain", "Road") 
+   - category2: 8 unique values ("Trail", "Elite Road", "Sport", "Cross Country Race", "Fat Bike",
+   "Over Mountain", "Triathalon", "Cyclocross", "Endurance Road")
+-  1 frame variable (character) with 2 unique values("Aluminum", "Carbon")
+-  1 price variable (numeric) with the following statistics:
+   - Minimum: 415
+   - Maximum: 12790
+   - Median: 3200
+   - Mean: 3954
+-  30 Unique Bike Purchasers with purchase data for each model (numeric)
+2.  There are no missing values (na's), however, some vendors have 0 listed for certain models. 
+The number of "0" entries ranges from 0 to 37 for each vendor.
+3.  Based on analyzing the sums of rows and columns, the values for each vendor column 
+(columns 6-35) sum to 1, which make it appear that the values in these columns represent the portion
+that each bike model comprises of each vendor's total bike sales.  For the remainder of this analysis,
+these values will be treated as proportions/percentages. 
+
+## Data Exploration
+
+### Exploratory Plots
+
+```{r include = FALSE}
+new_bikes <- bikes %>%
+  mutate(avgsales = rowMeans(select(bikes,6:35))) #taking avereage of sales proportion for each bike
+bike_averages <- new_bikes %>% #reducing data to average instead of individual per store data
+  select(model, category1, category2, frame, price, avgsales)
+bike_averages
+```
+
+```{r echo = FALSE}
+library(ggplot2)
+ggplot(bike_averages) +
+  geom_col(aes(x = category1, y = avgsales, fill = category2)) +
+  labs(title = "Sales broken down by main category and sub-category of bike", 
+  x = "Main Category", y = "Cumulative Average Sales Proportion", fill = "Sub-Category")
+``` 
+ 
+**Analysis:** Road bikes make up the highest cumulative average sales proportion of all bikes. 
+Of those, Elite Road makes up the largest cumulative portion.  
+The smallest cumulative portion is the Fat Bike (a Mountain Bike).
+
+
+
+```{r echo = FALSE}
+ggplot(bike_averages) +
+  geom_col(aes(x = frame, y = avgsales, fill = category1)) +
+  labs(title = "Sales by Frame Type and Main Category", 
+       x = "Frame Type", y = "Cumulative Average Sales Proportion", fill = "Main Category")
+``` 
+  
+**Analysis:** Carbon bikes make up a larger cumulative average sales proportion.  
+Of those, Road Carbon frame bikes make up the largest cumulative average sales proportion.  
+
+
+
+```{r include = FALSE}
+ggplot(bike_averages) +
+  geom_histogram(aes(x = price), bins = 25) # This was not particularly helpful, will not include
+#price histogram
+```
+
+```{r echo = FALSE}
+
+ggplot(bike_averages, aes(x = frame, y = avgsales)) +
+  geom_jitter(aes(color = category1)) +
+  geom_boxplot(alpha = 0) +
+  labs(title = "Individual Bike Model  Sales by Frame Type", 
+       x = "Frame Type", y = "Average Sales Proportion", color = "Main Category")
+``` 
+ 
+**Analysis:** Looking at this boxplot, we can see that the carbon-frame bicycles actually 
+individually have a lower average sales proportion per bicycle model.  It is clear though, 
+that Road models in general have higher average sales. 
+
+```{r include=FALSE}
+ggplot(bike_averages, aes(x = category1, y = avgsales)) +
+  geom_jitter(aes(color = frame)) +
+  geom_boxplot(alpha = 0) #The information from this plot duplicates information
+#already gleaned, not including
+```
+
+```{r echo = FALSE}
+
+ggplot(bike_averages, aes(x = category2, y = avgsales)) +
+  geom_jitter(aes(color = frame, shape = category1)) +
+  geom_boxplot(alpha = 0) +
+  theme(axis.text.x=element_text(angle=90,hjust=0.5,vjust=0.5)) +
+  labs(title = "Individual Bike Model Sales by Subcategory",
+       x = "Subcategory", y = "Average Sales Proportion", color = "Frame Type", 
+       shape = "Main Category") 
+``` 
+ 
+**Analysis:** The highest average sales proportion comes from the Triathalon bikes (Carbon frame Road models). 
+Road models constitute the highest average individual bike model sales. The lowest average sales 
+proportion comes from the Over Mountain bikes (Carbon frame Mountain Models).  
+Looking at individual data points, there are bikes from the Elite Road line (Road Models) and 
+bikes from the Triathalon line that are the leading sellers. The closest Mountain Model to them is one from the Over Mountain line interestingly enough.  Clearly, here, the road models generally are higher
+sellers than the Mountain. 
+
+```{r include = FALSE}
+#This section is not necessary, just closer views
+bike_averages %>%
+  filter(category1 == "Mountain") %>%
+  ggplot(aes(x = category2, y = avgsales)) +
+  geom_jitter(aes(color = frame)) +
+  geom_boxplot(alpha = 0)
+bike_averages %>%
+  filter(category1 == "Road") %>%
+  ggplot(aes(x = category2, y = avgsales)) +
+  geom_jitter(aes(color = frame)) +
+  geom_boxplot(alpha = 0)
+```
+```{r echo = FALSE}
+ggplot(bike_averages) +
+  geom_histogram(aes(x = avgsales), bins = 25) +
+  labs(title = "Distribution of Average Sales Poportions of Individual Bikes", 
+       x = "Average Sales Proportion", y = "Bike Model Count")
+``` 
+ 
+**Analysis:** We can see here that distribution is not completely normal, but fairly close.  
+There are some outliers on the higher end of the x-axis. 
+
+
+```{r include = FALSE}
+#Not necessary to include
+ggplot(bike_averages) +
+  geom_point(aes(x = price, y = avgsales)) 
+```
+### Regression Analysis
+```{r include = FALSE}
+#This section did not product a good model 
+##Gaussian glm
+gaussian_glm <- glm(avgsales ~ price, data = bike_averages, family = "gaussian")
+pred_df <- data.frame(price = seq(from = 450, to = 12500, length = 10))
+head(pred_df)
+pred_df$predicted <- predict(gaussian_glm, pred_df)
+head(pred_df)
+
+ggplot(bike_averages) +
+  geom_point(aes(x = price, y = avgsales)) +
+  geom_line(aes(x = price, y = predicted), data = pred_df)
+
+diag <- data.frame(residuals = resid(gaussian_glm), fitted = fitted(gaussian_glm))
+
+ggplot(diag) +
+  geom_point(aes(x = fitted, y = residuals))
+```
+
+```{r echo = FALSE}
+#Factors
+gaussian_glm2 <- glm(avgsales ~ price * category1, data = bike_averages, family = "gaussian")
+pred_df2 <- data.frame(price = seq(from = 450, to = 12500, length = 20), category1 = c("Mountain", "Road"))
+pred_df2$predicted <- predict(gaussian_glm2, pred_df2, type = "response")
+
+
+ggplot(bike_averages) +
+  geom_point(aes(x = price, y = avgsales, color = category1)) +
+  geom_line(aes(x = price, y = predicted, col = category1), data = pred_df2) +
+  labs(title = "Price vs Sales Average Prediction, factored by Main Category",
+       x = "Selling Price", y = "Average Sales Proportion", color = "Main Category")
+
+diag <- data.frame(residuals = resid(gaussian_glm2), fitted = fitted(gaussian_glm2))
+ggplot(diag) + 
+  geom_point(aes(x = fitted, y = residuals)) +
+  labs(title = "Fitted vs Residuals", y = "Model Residuals", x = "Fitted Values")
+``` 
+ 
+**Analysis:** Looking at the plotted data, it does not appear completely linear.  
+However a linear model was attempted.  Using a Gaussian GLM and adding in a "Main Category" factor produced this regression. 
+
+#### Model Diagnostics
+```{r include=FALSE}
+library(lmtest)
+bptest(gaussian_glm2)
+```  
+The Breusch-Pagan test fails to reject the assumption of homoscedasticity. 
+```{r include = FALSE}
+hist(resid(gaussian_glm2))
+qqnorm(resid(gaussian_glm2), col = "darkgrey")
+qqline(resid(gaussian_glm2), col = "dodgerblue", lwd = 2)
+shapiro.test(resid(gaussian_glm2))
+```  
+Both the Shapiro-Wilk normality test and the Q-Q plot suggest that the normality assumption is violated. 
+
+```{r include = FALSE}
+hatvalues(gaussian_glm2)
+hatvalues(gaussian_glm2) > 2 * mean(hatvalues(gaussian_glm2))
+rstandard(gaussian_glm2)
+rstandard(gaussian_glm2)[abs(rstandard(gaussian_glm2)) > 2]
+```  
+Six outliers have been identified in this model: Entries 11, 22, 57, 58, 67, and 97.  
+This corresponds to the following bike models: CADD12 Red, F-Si 2, Slice Ultegra, Slice Ultegra D12, 
+Supersix Evo Ultegra 3, and Trigger Carbon 4. 
+
+
+```{r include = FALSE}
+gaussian_glm2_cd = cooks.distance(gaussian_glm2)
+gaussian_glm2_cd > 4 / length(gaussian_glm2_cd)
+sum(gaussian_glm2_cd > 4 / length(gaussian_glm2_cd))
+```
+Additionally, utilizing Cook's Distance, we find that the following entries are considered influential:  
+22, 44, 60, 97  
+These correspond to F-Si 2, Scalpel-Si Black Inc., Supersix Evo Black Inc., and Trigger Carbon 4. 
+
+### Cluster Analysis of Vendors Using K Means Clustering
+```{r include = FALSE}
+#K means clustering
+vendors <- bikes %>%
+  select(-model, -category1, -category2, -frame, -price)
+tran_vendors <- t(vendors)
+str(tran_vendors)
+
+library(tidyverse)
+wss <- function(k) {
+  kmeans(tran_vendors, k, nstart = 10)$tot.withinss
+}
+# decide how many k values you want to look at
+k.values <- 1:10
+
+#compute wss for those clusters you decided on
+wss_values <- map_dbl(k.values, wss)
+plot(k.values, wss_values,
+     type="b", pch = 19, frame = FALSE,
+     xlab="Number of clusters K",
+     ylab="Total within-clusters sum of squares")
+
+library(factoextra) 
+
+final <- kmeans(tran_vendors, 2, nstart = 25)
+final$cluster
+```
+
+```{r echo = FALSE}
+
+fviz_cluster(final, data = tran_vendors)
+``` 
+ 
+**Analysis:** An Elbow Plot identified 2 as the optimal number of clusters to separate the vendors into. 
+Cluster 1 has 21 members and Cluster 2 has 9 members.  
+Further analysis of vendor buying preferences could allow for two different marketing strategies to improve sales to both groups. 
+
+## Answers for Initial Questions
+1. What types of bikes are purchased most frequently?  
+- Road bikes cumulatively constitute the largest proportion of average sales, with Elite Road and Endurance Road sub-categories as the leaders.  Of the Mountain bikes, Cross Country Race constitute the largest proportion. Cumulatively, carbon frame bikes constitute the largest proportion of sales.
+- On an individual model basis, aluminum frame bikes tended to have higher average sales proportions. Category-wise, Road bikes tended to perform better. Almost all of the models with the highest averages were Road bikes. 
+2. What types of bikes are purchased least frequently?
+- On an individual model basis, the lowest performers were carbon frame Mountain bikes.  All of the carbon frame Trail bikes had low averages, and the models with the lowest averages were carbon frames from the Cross Country Race and Over Mountain sub-categories of Mountain bikes. 
+3. Can vendors be separated into smaller groups to provide more targeted advertising?
+- Cluster analysis does filter the vendors in to 2 subgroups: 
+  - Cluster 1: Albuquerque Cycles, Ann Arbor Speed, Austin Cruisers, Dallas Cycles, Denver Bike Shop,
+  Detroit Cycles, Indianapolis Velocipedes, Kansas City 29ers, Los Angeles Cycles,  Miami Race Equipment, 
+  Minneapolis Bike Shop, Nashville Cruisers, New Orleans Velocipedes, New York Cycles, Oklahoma City Race 
+  Equipment, Philadelphia Bike Shop, Phoenix Bi-peds, Portland Bi-peds, Providence Bi-peds, San Antonio 
+  Bike Shop, Seattle Race Equipment
+  - Cluster 2: Cincinnati Speed, Columbus Race Equipment, Ithaca Mountain Climbers, Las Vegas Cycles, 
+  Louisville Race Equipment, Pittsburgh Mountain Machines, San Francisco Cruisers, Tampa 29ers, Wichita 
+  Speed
+- Further analysis can be performed to better characterize how buying habits differ between these two 
+clusters.  This will allow for more personalized/targeted advertising in the future. 
+4. Are there any bikes that do not follow anticipated sales based on others in their category (e.g. any outliers)?
+- The model created found six outliers: CADD12 Red (aluminum road), F-Si 2 (aluminum mountain), Slice Ultegra (carbon road), Slice Ultegra D12 (carbon road), Supersix Evo Ultegra 3 (carbon road), and Trigger Carbon 4 (carbon mountain). 
+- It is important to note, though, that the model created here was not ideal as it had assumption violations. A different model may provide a more accurate identification of outliers. 
