@@ -56,6 +56,7 @@ The number of "0" entries ranges from 0 to 37 for each vendor.
 (columns 6-35) sum to 1, which make it appear that the values in these columns represent the portion
 that each bike model comprises of each vendor's total bike sales.  For the remainder of this analysis,
 these values will be treated as proportions/percentages. 
+4. Preprocessing: sales proportions were averaged across the vendor columns for each model. 
 
 ## Data Exploration
 
@@ -200,39 +201,44 @@ ggplot(bike_averages) +
   geom_line(aes(x = price, y = predicted, col = category1), data = pred_df2) +
   labs(title = "Price vs Sales Average Prediction, factored by Main Category",
        x = "Selling Price", y = "Average Sales Proportion", color = "Main Category")
+``` 
+ 
+**Analysis:** Regression analysis was completed with average sales proportion as the dependent variable and price as the independed variable. "Main Category" was added in as a factor.  Looking at the plotted data, it does not appear completely linear.  
+However a linear model was attempted.  Using a Gaussian GLM and adding in a "Main Category" factor produced this regression. 
 
+#### Model Diagnostics
+```{r include = FALSE}
 diag <- data.frame(residuals = resid(gaussian_glm2), fitted = fitted(gaussian_glm2))
 ggplot(diag) + 
   geom_point(aes(x = fitted, y = residuals)) +
   labs(title = "Fitted vs Residuals", y = "Model Residuals", x = "Fitted Values")
-``` 
- 
-**Analysis:** Looking at the plotted data, it does not appear completely linear.  
-However a linear model was attempted.  Using a Gaussian GLM and adding in a "Main Category" factor produced this regression. 
+```  
 
-#### Model Diagnostics
+
 ```{r include=FALSE}
 library(lmtest)
 bptest(gaussian_glm2)
 ```  
-The Breusch-Pagan test fails to reject the assumption of homoscedasticity. 
-```{r include = FALSE}
+ 
+```{r echo = FALSE}
 hist(resid(gaussian_glm2))
+```
+The histogram of residuals looks skewed.  
+```{r include = FALSE}
 qqnorm(resid(gaussian_glm2), col = "darkgrey")
 qqline(resid(gaussian_glm2), col = "dodgerblue", lwd = 2)
 shapiro.test(resid(gaussian_glm2))
 ```  
-Both the Shapiro-Wilk normality test and the Q-Q plot suggest that the normality assumption is violated. 
+
 
 ```{r include = FALSE}
 hatvalues(gaussian_glm2)
 hatvalues(gaussian_glm2) > 2 * mean(hatvalues(gaussian_glm2))
 rstandard(gaussian_glm2)
 rstandard(gaussian_glm2)[abs(rstandard(gaussian_glm2)) > 2]
+
 ```  
-Six outliers have been identified in this model: Entries 11, 22, 57, 58, 67, and 97.  
-This corresponds to the following bike models: CADD12 Red, F-Si 2, Slice Ultegra, Slice Ultegra D12, 
-Supersix Evo Ultegra 3, and Trigger Carbon 4. 
+ 
 
 
 ```{r include = FALSE}
@@ -240,9 +246,17 @@ gaussian_glm2_cd = cooks.distance(gaussian_glm2)
 gaussian_glm2_cd > 4 / length(gaussian_glm2_cd)
 sum(gaussian_glm2_cd > 4 / length(gaussian_glm2_cd))
 ```
-Additionally, utilizing Cook's Distance, we find that the following entries are considered influential:  
-22, 44, 60, 97  
-These correspond to F-Si 2, Scalpel-Si Black Inc., Supersix Evo Black Inc., and Trigger Carbon 4. 
+```{r echo = FALSE}
+plot(gaussian_glm2)
+
+```
+**Analysis**  
+- The Breusch-Pagan test fails to reject the assumption of homoscedasticity.  
+- The **residuals vs fitted** plot looks like there could be some problems in the model.  There definitely appear to be some obvious outliers.  
+- Both the Shapiro-Wilk normality test and the **Q-Q plot** suggest that the normality assumption is violated.   
+- Six outliers have been identified in this model (in the **Scale-Location plot**): Entries 11, 22, 57, 58, 67, and 97.  This corresponds to the following bike models: CADD12 Red, F-Si 2, Slice Ultegra, Slice Ultegra D12, Supersix Evo Ultegra 3, and Trigger Carbon 4.    
+- Additionally, utilizing Cook's Distance, we find that the following entries are considered influential (**Residuals vs Leverage plot**):  
+22, 44, 60, 97.  These correspond to F-Si 2, Scalpel-Si Black Inc., Supersix Evo Black Inc., and Trigger Carbon 4. 
 
 ### Cluster Analysis of Vendors Using K Means Clustering
 ```{r include = FALSE}
@@ -280,6 +294,8 @@ fviz_cluster(final, data = tran_vendors)
 **Analysis:** An Elbow Plot identified 2 as the optimal number of clusters to separate the vendors into. 
 Cluster 1 has 21 members and Cluster 2 has 9 members.  
 Further analysis of vendor buying preferences could allow for two different marketing strategies to improve sales to both groups. 
+No patterns have yet been identified as to the clustering. Further analysis into the sales 
+data could provide answers as to why these two groups were identified. 
 
 ## Answers for Initial Questions
 1. What types of bikes are purchased most frequently?  
