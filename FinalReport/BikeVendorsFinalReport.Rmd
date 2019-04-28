@@ -201,10 +201,15 @@ ggplot(bike_averages) +
   geom_line(aes(x = price, y = predicted, col = category1), data = pred_df2) +
   labs(title = "Price vs Sales Average Prediction, factored by Main Category",
        x = "Selling Price", y = "Average Sales Proportion", color = "Main Category")
+
 ``` 
  
 **Analysis:** Regression analysis was completed with average sales proportion as the dependent variable and price as the independed variable. "Main Category" was added in as a factor.  Looking at the plotted data, it does not appear completely linear.  
-However a linear model was attempted.  Using a Gaussian GLM and adding in a "Main Category" factor produced this regression. 
+However a linear model was attempted.  Using a Gaussian GLM and adding in a "Main Category" factor produced this regression. In general from this model visualization, we clearly see that bikes with lower selling prices generally have a higher sales proportion, and that generally the the Mountain bikes have a lower sale proportion than the Road bikes.  
+```{r echo = FALSE}
+summary(gaussian_glm2)
+```
+**Analysis of Regression Summary Table:** The median deviance residual is very close to zero, so the model is not biased (does not over or underestimate).  We see that the intercept, price and category1Road (Main Category) coefficients are significant. There does not appear to be a statistically significant interaction effect between price and Main Category.
 
 #### Model Diagnostics
 ```{r include = FALSE}
@@ -275,11 +280,15 @@ k.values <- 1:10
 
 #compute wss for those clusters you decided on
 wss_values <- map_dbl(k.values, wss)
+```
+```{r echo = FALSE}
 plot(k.values, wss_values,
      type="b", pch = 19, frame = FALSE,
      xlab="Number of clusters K",
      ylab="Total within-clusters sum of squares")
+```
 
+```{r include = FALSE}
 library(factoextra) 
 
 final <- kmeans(tran_vendors, 2, nstart = 25)
